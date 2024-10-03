@@ -210,6 +210,7 @@ public:
     bool visibleToTests_ = false;
 
     optional<pair<core::packages::StrictDependenciesLevel, core::LocOffsets>> strictDependenciesLevel = nullopt;
+    optional<pair<core::NameRef, core::LocOffsets>> layer = nullopt;
 
     // PackageInfoImpl is the only implementation of PackageInfoImpl
     const static PackageInfoImpl &from(const core::packages::PackageInfo &pkg) {
@@ -1127,6 +1128,28 @@ struct PackageSpecBodyWalk {
                 }
             }
         }
+
+        if (send.fun == core::Names::layer()) {
+            if (info.layer.has_value()) {
+                if (auto e = ctx.beginError(send.loc, core::errors::Packager::InvalidStrictDependencies)) {
+                    e.setHeader("Repeated declaration of `{}`", send.fun.show(ctx));
+                    e.addErrorLine(ctx.locAt(info.layer.value().second), "Previous declaration found here");
+                    e.replaceWith("Remove this declaration", ctx.locAt(send.loc), "");
+                }
+                return;
+            }
+
+            if (send.numPosArgs() > 0) {
+                auto parsedValue = parseLayerOption(ctx.state, send.getPosArg(0));
+                if (parsedValue.has_value()) {
+                } else {
+                    if (auto e = ctx.beginError(send.argsLoc(), core::errors::Packager::InvalidConfiguration)) {
+                        // TODO: list out all the valid layers
+                        e.setHeader("Argument to `{}` must be a string literal", send.fun.show(ctx));
+                    }
+                }
+            }
+        }
     }
 
     void preTransformClassDef(core::Context ctx, const ast::ExpressionPtr &tree) {
@@ -1277,6 +1300,20 @@ private:
         }
 
         return nullopt;
+    }
+
+    optional<core::NameRef> parseLayerOption(const core::GlobalState &gs, ast::ExpressionPtr &arg) {
+        auto &validLayers = gs.packageDB().layers();
+        auto *lit = ast::cast_tree<ast::Literal>(arg);
+        if (!lit || !lit->isString()) {
+            return nullopt;
+        }
+        auto value = lit->asString();
+        for (auto &layer : validLayers) {
+            fmt::print("layer: {}\n", layer.show(gs));
+        }
+        fmt::print("valid layer: {}\n", absl::c_find(validLayers, value) != validLayers.end());
+        return value;
     }
 };
 
