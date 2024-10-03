@@ -290,7 +290,7 @@ void setupPackager(unique_ptr<core::GlobalState> &gs, vector<shared_ptr<RangeAss
         core::packages::UnfreezePackages unfreezeToEnterPackagerOptionsPackageDB = gs->unfreezePackages();
         gs->setPackagerOptions(
             extraPackageFilesDirectoryUnderscorePrefixes, extraPackageFilesDirectorySlashDeprecatedPrefixes,
-            extraPackageFilesDirectorySlashPrefixes, {}, allowRelaxedPackagerChecksFor, "PACKAGE_ERROR_HINT");
+            extraPackageFilesDirectorySlashPrefixes, {}, allowRelaxedPackagerChecksFor, {}, "PACKAGE_ERROR_HINT");
     }
 }
 

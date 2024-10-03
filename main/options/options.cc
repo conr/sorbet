@@ -627,6 +627,7 @@ buildOptions(const vector<pipeline::semantic_extension::SemanticExtensionProvide
                                  "Packages which are allowed to ignore the restrictions set by `visible_to` "
                                  "and `export` directives",
                                  cxxopts::value<vector<string>>(), "<name>");
+    options.add_options(section)("packager-layers", "TODO: layers", cxxopts::value<vector<string>>(), "<layerName>");
     options.add_options(section)("package-skip-rbi-export-enforcement",
                                  "Constants defined in RBIs in these directories (and no others) can be exported",
                                  cxxopts::value<vector<string>>(), "<dir>");
@@ -1196,6 +1197,21 @@ void readOptions(Options &opts,
                     throw EarlyReturnWithCode(1);
                 }
                 opts.allowRelaxedPackagerChecksFor.emplace_back(ns);
+            }
+        }
+
+        if (raw.count("packager-layers")) {
+            if (!opts.stripePackages) {
+                logger->error("--packager-layers can only be specified in --stripe-packages mode");
+                throw EarlyReturnWithCode(1);
+            }
+            std::regex nsValid("[a-zA-Z0-9]+");
+            for (const string &ns : raw["packager-layers"].as<vector<string>>()) {
+                if (!std::regex_match(ns, nsValid)) {
+                    logger->error("--packager-layers must contain items that are alphanumeric.");
+                    throw EarlyReturnWithCode(1);
+                }
+                opts.packagerLayers.emplace_back(ns);
             }
         }
 
